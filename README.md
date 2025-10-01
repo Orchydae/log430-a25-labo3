@@ -58,7 +58,7 @@ Une API qui respecte l'ensemble de ces principes est appelée une API RESTful. P
 Dans `src/tests/test_store_manager.py`, dans la méthode `test_stock_flow()`, écrivez un [smoke test](https://www.techtarget.com/searchsoftwarequality/definition/smoke-testing) pour que nous puissions observer comment le processus de stock fonctionne, et aussi nous assurer qu'il fonctionne de manière consistante. Testez les endpoints suivants :
 
 1. Créez un article (`POST /products`)
-2. Ajoutez 5 unités au stock de cet article (`POST /products_stocks`)
+2. Ajoutez 5 unités au stock de cet article (`POST /stocks`)
 3. Vérifiez le stock, votre article devra avoir 5 unités dans le stock (`GET /stocks/:id`)
 4. Faites une commande de 2 unités de l'article que vous avez créé  (`POST /orders`)
 5. Vérifiez le stock encore une fois (`GET /stocks/:id`)
@@ -70,7 +70,7 @@ Exécutez vos tests pour vous assurer que le flux de stock fonctionne correcteme
 
 ### 2. Créez un rapport de stock
 
-Le directeur du magasin qui utilise notre application a besoin de connaître l'état des articles dans le stock. Dans `src/queries/read_stock.py`, il y a une méthode `get_stock_for_all_products`, qui est utilisée par l'endpoint `/stocks/reports/overview` pour donner les stocks de chaque article, mais il n'y a pas beaucoup d'informations. Ajoutez les colonnes `name`, `sku` et `price` de l'article en utilisant la méthode [join à SQLAlchemy](https://docs.sqlalchemy.org/en/14/orm/query.html#sqlalchemy.orm.Query.join). Cela vous permettra de joindre l'information du tableau `Stock` avec `Product`.
+Le directeur du magasin qui utilise notre application a besoin de connaître l'état des articles dans le stock. Dans `src/queries/read_stock.py`, il y a une méthode `get_stock_for_all_products`, qui est utilisée par l'endpoint `/stocks/reports/overview-stocks` pour donner les stocks de chaque article, mais il n'y a pas beaucoup d'informations. Ajoutez les colonnes `name`, `sku` et `price` de l'article en utilisant la méthode [join à SQLAlchemy](https://docs.sqlalchemy.org/en/14/orm/query.html#sqlalchemy.orm.Query.join). Cela vous permettra de joindre l'information du tableau `Stock` avec `Product`.
 
 > 💡 **Question 2** : Décrivez l'utilisation de la méthode join dans ce cas. Utilisez les méthodes telles que décrites à `Simple Relationship Joins` et `Joins to a Target with an ON Clause` dans la documentation SQLAlchemy pour ajouter les colonnes demandées dans cette activité. Veuillez inclure le code pour illustrer votre réponse.
 
@@ -89,9 +89,9 @@ GraphQL est un langage qui nous permet de donner la possibilité aux clients qui
 }
 ```
 
-L'endpoint GraphQL est accessible via `POST /stocks/graphql`.
+L'endpoint GraphQL est accessible via `POST /stocks/graphql-query`.
 
-> 💡 **Question 3** : Quels résultats avez-vous obtenus en utilisant l’endpoint `POST /stocks/graphql` avec la requête suggérée ? Veuillez joindre la sortie de votre requête dans Postman afin d’illustrer votre réponse.
+> 💡 **Question 3** : Quels résultats avez-vous obtenus en utilisant l’endpoint `POST /stocks/graphql-query` avec la requête suggérée ? Veuillez joindre la sortie de votre requête dans Postman afin d’illustrer votre réponse.
 
 ### 4. Ajoutez plus d'informations à l'endpoint GraphQL
 
@@ -99,7 +99,7 @@ La correspondance entre les colonnes GraphQL et les données est définie dans `
 
 > 💡 **Question 4** : Quelles lignes avez-vous changé dans `update_stock_redis`? Veuillez joindre du code afin d’illustrer votre réponse.
 
-> 💡 **Question 5** : Quels résultats avez-vous obtenus en utilisant l’endpoint `POST /stocks/graphql` avec les améliorations ? Veuillez joindre la sortie de votre requête dans Postman afin d’illustrer votre réponse.
+> 💡 **Question 5** : Quels résultats avez-vous obtenus en utilisant l’endpoint `POST /stocks/graphql-query` avec les améliorations ? Veuillez joindre la sortie de votre requête dans Postman afin d’illustrer votre réponse.
 
 ### 5. Créez un autre conteneur pour effectuer un test de communication
 Pour simuler un scénario plus proche de la réalité, exécutez `scripts/supplier_app.py` dans un conteneur séparé (comme si c'était sur le serveur de notre fournisseur). Observez les résultats. Si vous avez besoin de précisions supplémentaires, référez-vous au diagramme `docs/views/deployment.puml`. Vous pouvez vous appuyer sur les `Dockerfile` et le `docker-compose.yml` déjà présents dans le répertoire `scripts`.
