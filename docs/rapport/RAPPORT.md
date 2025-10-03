@@ -93,6 +93,7 @@ UNIVERSITÉ DU QUÉBEC
 - [Mise en place](#mise-en-place)
   - [1) Préparer la VM (à faire une seule fois)](#1-préparer-la-vm-à-faire-une-seule-fois)
   - [2) Enregistrer le runner dans le repo](#2-enregistrer-le-runner-dans-le-repo)
+  - [3) Vérification du déploiement](#3-vérification-du-déploiement)
 - [Question 1](#question-1)
 - [Question 2](#question-2)
 - [Question 3](#question-3)
@@ -130,6 +131,13 @@ Actions -> Runners -> New self-hosted runner -> Linux x64
 Ensuite, on crée le runner avec le token qui nous a été attribué par GitHub et on effectue la commande `./run.sh` pour faire rouler le runner. Par la suite, le fichier `cd.yml` a été créé en fonction pour utiliser le self-hosted runner.
 
 ![Self hosted runner](self_hosted_runner.png)
+
+## 3) Vérification du déploiement
+Depuis ma machine locale, j'effectue un health-check:
+![health check](health-check.png)
+
+Et je teste aussi le rapport de stock:
+![Stock report](rapport_stock.png)
 
 # Question 1
 > Quel nombre d'unités de stock pour votre article avez-vous obtenu à la fin du test ? Et pour l'article avec id=2 ? Veuillez inclure la sortie de votre Postman pour illustrer votre réponse.
