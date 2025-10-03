@@ -91,6 +91,8 @@ UNIVERSITÉ DU QUÉBEC
 <h1> Tables des matières </h1>
 
 - [Mise en place](#mise-en-place)
+  - [1) Préparer la VM (à faire une seule fois)](#1-préparer-la-vm-à-faire-une-seule-fois)
+  - [2) Enregistrer le runner dans le repo](#2-enregistrer-le-runner-dans-le-repo)
 - [Question 1](#question-1)
 - [Question 2](#question-2)
 - [Question 3](#question-3)
@@ -103,7 +105,29 @@ UNIVERSITÉ DU QUÉBEC
 # Mise en place
 Le projet a été fork, puis ensuite clôné. Au niveau de Docker, dans le terminal, j'ai effectué la commande pour créer un réseau Docker et pour préparer l'environnement de développement. Par la suite, j'ai importé la collection disponible dans `/docs/collections`. 
 
-Au niveau du déploiement, les fichiers `.yml` pour le CI/CD ont été créés. Ainsi, lorsque les tests 
+Au niveau du déploiement, la stratégie que j'ai employé est l'utilisation du self-hosted runner.
+
+## 1) Préparer la VM (à faire une seule fois)
+Commençons par SSH dans la VM et puis on lance la commande suivante:
+```
+# 1) Create a place for the runner
+mkdir -p ~/actions-runner
+cd ~/actions-runner
+
+# 2) Download the latest Linux x64 runner (from GitHub UI you'll get a URL)
+# Example (adjust version if needed):
+curl -o actions-runner.tar.gz -L https://github.com/actions/runner/releases/download/v2.319.1/actions-runner-linux-x64-2.319.1.tar.gz
+tar xzf actions-runner.tar.gz
+
+# 3) (Optional) Ensure Docker is usable by this user (or you'll use sudo later)
+# sudo usermod -aG docker $USER
+# newgrp docker
+```
+
+## 2) Enregistrer le runner dans le repo
+Actions -> Runners -> New self-hosted runner -> Linux x64
+
+Ensuite, on crée le runner avec le token qui nous a été attribué par GitHub et on effectue la commande `./run.sh` pour faire rouler le runner. Par la suite, le fichier `cd.yml` a été créé en fonction pour utiliser le self-hosted runner.
 
 # Question 1
 > Quel nombre d'unités de stock pour votre article avez-vous obtenu à la fin du test ? Et pour l'article avec id=2 ? Veuillez inclure la sortie de votre Postman pour illustrer votre réponse.

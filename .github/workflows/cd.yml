@@ -10,79 +10,48 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
-
+    runs-on: [self-hosted, linux]   # runs directly on your VM
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install ssh/rsync tools
+      - name: Ensure Docker/Compose available
         run: |
-            sudo apt-get update
-            sudo apt-get install -y --no-install-recommends sshpass rsync openssh-client
-            # ✅ Créer le répertoire ~/.ssh avant d’écrire known_hosts
-            mkdir -p ~/.ssh
-            chmod 700 ~/.ssh
-            # Option 1: enregistrer la clé host (sécuritaire)
-            ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
-            chmod 644 ~/.ssh/known_hosts
+          set -e
+          if command -v docker >/dev/null 2>&1; then
+            echo "Docker OK: $(docker --version)"
+          else
+            echo "Docker not installed on VM"; exit 1
+          fi
 
-            - name: Sync repo to VM home (~) over SSH
-        env:
-          SSHPASS: ${{ secrets.VM_PASSWORD }}
+          # Compose v2 plugin check
+          if docker compose version >/dev/null 2>&1; then
+            docker compose version
+          else
+            echo "Docker Compose v2 plugin missing on VM"; exit 1
+          fi
+
+      - name: Create external network (if needed)
         run: |
-          # Copie tout le repo dans ~ (home) de l'utilisateur sur la VM
-          sshpass -e rsync -az --delete \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='**/__pycache__' \
-            -e "ssh -o StrictHostKeyChecking=no" \
-            ./ "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:~/"
+          docker network create labo03-network || true
 
-      - name: Remote deploy (docker compose up -d) from ~
-        env:
-          SSHPASS: ${{ secrets.VM_PASSWORD }}
+      - name: Create .env if missing (prod defaults)
         run: |
-          sshpass -e ssh -o StrictHostKeyChecking=no \
-            "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" '
-              set -euxo pipefail
-              cd ~
+          if [ ! -f .env ]; then
+            cat <<EOF > .env
+            DB_HOST=mysql
+            DB_PORT=3306
+            DB_NAME=labo03_db
+            DB_USER=labo03
+            DB_PASS=labo03
+            REDIS_HOST=redis
+            REDIS_PORT=6379
+            REDIS_DB=0
+            EOF
+          fi
 
-              # Si l’utilisateur n’est pas dans le groupe docker, on utilisera sudo
-              if id -nG "$USER" | grep -qw docker; then
-                DOCKER="docker"
-              else
-                DOCKER="sudo docker"
-              fi
-
-              # Sanity checks
-              $DOCKER --version
-              $DOCKER compose version || (echo "docker compose plugin manquant sur la VM" && exit 1)
-
-              # Réseau externe partagé (si absent)
-              $DOCKER network create labo03-network || true
-
-              # .env de prod (créé une seule fois si absent)
-              if [ ! -f .env ]; then
-                cat <<EOF > .env
-                DB_HOST=mysql
-                DB_PORT=3306
-                DB_NAME=labo03_db
-                DB_USER=labo03
-                DB_PASS=labo03
-                REDIS_HOST=redis
-                REDIS_PORT=6379
-                REDIS_DB=0
-                EOF
-              fi
-
-              # Build & run
-              $DOCKER compose pull || true
-              $DOCKER compose build
-              $DOCKER compose up -d
-
-              # (Optionnel) Nettoyer les images inutilisées
-              $DOCKER image prune -f || true
-
-              # (Optionnel) mini healthcheck si ton service expose /health-check
-              # sleep 5 && curl -sf http://localhost:5000/health-check || (echo "Healthcheck failed" && exit 1)
-            '
+      - name: Build & up
+        run: |
+          docker compose pull || true
+          docker compose build
+          docker compose up -d
+          docker image prune -f || true
