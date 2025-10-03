@@ -129,6 +129,8 @@ Actions -> Runners -> New self-hosted runner -> Linux x64
 
 Ensuite, on crée le runner avec le token qui nous a été attribué par GitHub et on effectue la commande `./run.sh` pour faire rouler le runner. Par la suite, le fichier `cd.yml` a été créé en fonction pour utiliser le self-hosted runner.
 
+![Self hosted runner](self_hosted_runner.png)
+
 # Question 1
 > Quel nombre d'unités de stock pour votre article avez-vous obtenu à la fin du test ? Et pour l'article avec id=2 ? Veuillez inclure la sortie de votre Postman pour illustrer votre réponse.
 

@@ -34,20 +34,23 @@ jobs:
         run: |
           docker network create labo03-network || true
 
-      - name: Create .env if missing (prod defaults)
-        run: |
-          if [ ! -f .env ]; then
-            cat <<EOF > .env
-            DB_HOST=mysql
-            DB_PORT=3306
-            DB_NAME=labo03_db
-            DB_USER=labo03
-            DB_PASS=labo03
-            REDIS_HOST=redis
-            REDIS_PORT=6379
-            REDIS_DB=0
-            EOF
-          fi
+          - name: Create .env if missing (printf)
+          shell: bash
+          run: |
+            set -euo pipefail
+            if [[ ! -f .env ]]; then
+              printf "%s\n" \
+                "DB_HOST=mysql" \
+                "DB_PORT=3306" \
+                "DB_NAME=labo03_db" \
+                "DB_USER=labo03" \
+                "DB_PASS=labo03" \
+                "REDIS_HOST=redis" \
+                "REDIS_PORT=6379" \
+                "REDIS_DB=0" \
+                > .env
+            fi
+        
 
       - name: Build & up
         run: |
