@@ -15,11 +15,19 @@ jobs:
       # Copie TOUT le repo dans le home (~) de l'utilisateur sur la VM
       - name: Copy repo to VM home (~)
         run: |
-          # Créer une archive du projet (en excluant .git et __pycache__)
-          tar --exclude='.git' \
-              --exclude='**/__pycache__' \
-              --exclude='.github/workflows/*.yml~' \
-              -czf project.tar.gz .
+          # Créer un répertoire temporaire pour l'archive
+          mkdir -p /tmp/deploy
+          cp -r . /tmp/deploy/project
+          
+          # Nettoyer les fichiers indésirables
+          find /tmp/deploy/project -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true
+          find /tmp/deploy/project -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+          find /tmp/deploy/project -name "*.pyc" -type f -delete 2>/dev/null || true
+          find /tmp/deploy/project -name ".github/workflows/*.yml~" -type f -delete 2>/dev/null || true
+          
+          # Créer l'archive depuis le répertoire temporaire
+          cd /tmp/deploy
+          tar -czf project.tar.gz project/
           
           # Copier l'archive vers la VM
           scp -o StrictHostKeyChecking=no \
@@ -30,7 +38,10 @@ jobs:
           ssh -o StrictHostKeyChecking=no \
               -o UserKnownHostsFile=/dev/null \
               ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
-              "rm -rf ~/log430-a25-labo3 && mkdir -p ~/log430-a25-labo3 && cd ~/log430-a25-labo3 && tar -xzf ~/project.tar.gz && rm ~/project.tar.gz"
+              "rm -rf ~/log430-a25-labo3 && mkdir -p ~/log430-a25-labo3 && cd ~/log430-a25-labo3 && tar -xzf ~/project.tar.gz --strip-components=1 && rm ~/project.tar.gz"
+          
+          # Nettoyer le répertoire temporaire
+          rm -rf /tmp/deploy
 
       - name: Remote deploy (docker compose up -d) from ~
         run: |
