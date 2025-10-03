@@ -75,4 +75,5 @@ jobs:
         # adapte si tes tests sont à la racine
         working-directory: src
         run: |
+          export PYTHONPATH="${PYTHONPATH}:$(pwd)"
           pytest -q
