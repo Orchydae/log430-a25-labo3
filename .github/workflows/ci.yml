@@ -48,6 +48,11 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f src/requirements.txt ]; then pip install -r src/requirements.txt; fi
+          
+      - name: Install MySQL and Redis clients
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client redis-tools
 
       - name: Create .env for tests
         run: |
@@ -69,6 +74,22 @@ jobs:
               echo "MySQL is up"; break
             fi
             echo "Waiting MySQL... ($i)"; sleep 2
+          done
+
+      - name: Initialize MySQL database
+        run: |
+          # Attendre que MySQL soit complètement prêt
+          sleep 10
+          # Exécuter le script d'initialisation
+          mysql -h 127.0.0.1 -uroot -proot < db-init/init.sql
+
+      - name: Wait for Redis to be ready
+        run: |
+          for i in {1..30}; do
+            if redis-cli -h 127.0.0.1 -p 6379 ping | grep -q PONG; then
+              echo "Redis is up"; break
+            fi
+            echo "Waiting Redis... ($i)"; sleep 1
           done
 
       - name: Run tests
