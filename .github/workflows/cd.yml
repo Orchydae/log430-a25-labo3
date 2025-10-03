@@ -1,0 +1,69 @@
+name: CD
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Copie TOUT le repo dans le home (~) de l'utilisateur sur la VM
+      - name: Copy repo to VM home (~)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          password: ${{ secrets.VM_PASSWORD }}
+          port: 22
+          source: "."
+          target: "~"                 # <= pas de path spécifique, on dépose dans ~
+          overwrite: true
+          rm: true
+          strip_components: 0
+          exclude: |
+            .git
+            .github/workflows/*.yml~  # fichiers temporaires éventuels
+            **/__pycache__
+
+      - name: Remote deploy (docker compose up -d) from ~
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          password: ${{ secrets.VM_PASSWORD }}
+          port: 22
+          script: |
+            set -e
+            cd ~
+            # Réseau externe partagé si absent
+            docker network create labo03-network || true
+
+            # .env de prod (si non présent déjà sur la VM)
+            if [ ! -f .env ]; then
+              cat <<EOF > .env
+              DB_HOST=mysql
+              DB_PORT=3306
+              DB_NAME=labo03_db
+              DB_USER=labo03
+              DB_PASS=labo03
+              REDIS_HOST=redis
+              REDIS_PORT=6379
+              REDIS_DB=0
+              EOF
+            fi
+
+            # Build & run
+            docker compose pull || true
+            docker compose build
+            docker compose up -d
+
+            # (Optionnel) Nettoyage images dangling
+            docker image prune -f || true
+
+            # (Optionnel) Healthcheck applicatif
+            # sleep 5 && curl -sf http://localhost:5000/health-check || (echo "Healthcheck failed" && exit 1)
