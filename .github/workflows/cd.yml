@@ -26,12 +26,11 @@ jobs:
             ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
             chmod 644 ~/.ssh/known_hosts
 
-      - name: Sync repo to VM home (~) over SSH
+            - name: Sync repo to VM home (~) over SSH
         env:
           SSHPASS: ${{ secrets.VM_PASSWORD }}
         run: |
-          # Copie dans ~ (pas de chemin spécifique)
-          # --delete pour retirer les fichiers obsolètes côté VM
+          # Copie tout le repo dans ~ (home) de l'utilisateur sur la VM
           sshpass -e rsync -az --delete \
             --exclude='.git' \
             --exclude='.github' \
@@ -45,10 +44,22 @@ jobs:
         run: |
           sshpass -e ssh -o StrictHostKeyChecking=no \
             "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" '
-              set -e
+              set -euxo pipefail
               cd ~
+
+              # Si l’utilisateur n’est pas dans le groupe docker, on utilisera sudo
+              if id -nG "$USER" | grep -qw docker; then
+                DOCKER="docker"
+              else
+                DOCKER="sudo docker"
+              fi
+
+              # Sanity checks
+              $DOCKER --version
+              $DOCKER compose version || (echo "docker compose plugin manquant sur la VM" && exit 1)
+
               # Réseau externe partagé (si absent)
-              docker network create labo03-network || true
+              $DOCKER network create labo03-network || true
 
               # .env de prod (créé une seule fois si absent)
               if [ ! -f .env ]; then
@@ -64,10 +75,14 @@ jobs:
                 EOF
               fi
 
-              # Build/Up
-              docker compose pull || true
-              docker compose build
-              docker compose up -d
+              # Build & run
+              $DOCKER compose pull || true
+              $DOCKER compose build
+              $DOCKER compose up -d
 
               # (Optionnel) Nettoyer les images inutilisées
-              docker image prune -f || true
+              $DOCKER image prune -f || true
+
+              # (Optionnel) mini healthcheck si ton service expose /health-check
+              # sleep 5 && curl -sf http://localhost:5000/health-check || (echo "Healthcheck failed" && exit 1)
+            '
