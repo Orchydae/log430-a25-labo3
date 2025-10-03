@@ -14,38 +14,38 @@ jobs:
 
       # Copie TOUT le repo dans le home (~) de l'utilisateur sur la VM
       - name: Copy repo to VM home (~)
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          password: ${{ secrets.VM_PASSWORD }}
-          port: 22
-          source: "."
-          target: "~"                 # <= pas de path spécifique, on dépose dans ~
-          overwrite: true
-          rm: true
-          strip_components: 0
-          exclude: |
-            .git
-            .github/workflows/*.yml~  # fichiers temporaires éventuels
-            **/__pycache__
+        run: |
+          # Créer une archive du projet (en excluant .git et __pycache__)
+          tar --exclude='.git' \
+              --exclude='**/__pycache__' \
+              --exclude='.github/workflows/*.yml~' \
+              -czf project.tar.gz .
+          
+          # Copier l'archive vers la VM
+          scp -o StrictHostKeyChecking=no \
+              -o UserKnownHostsFile=/dev/null \
+              project.tar.gz ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:~/
+          
+          # Extraire l'archive sur la VM
+          ssh -o StrictHostKeyChecking=no \
+              -o UserKnownHostsFile=/dev/null \
+              ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+              "rm -rf ~/log430-a25-labo3 && mkdir -p ~/log430-a25-labo3 && cd ~/log430-a25-labo3 && tar -xzf ~/project.tar.gz && rm ~/project.tar.gz"
 
       - name: Remote deploy (docker compose up -d) from ~
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          password: ${{ secrets.VM_PASSWORD }}
-          port: 22
-          script: |
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+              -o UserKnownHostsFile=/dev/null \
+              ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
             set -e
-            cd ~
+            cd ~/log430-a25-labo3
+            
             # Réseau externe partagé si absent
             docker network create labo03-network || true
 
             # .env de prod (si non présent déjà sur la VM)
             if [ ! -f .env ]; then
-              cat <<EOF > .env
+              cat <<ENVEOF > .env
               DB_HOST=mysql
               DB_PORT=3306
               DB_NAME=labo03_db
@@ -54,7 +54,7 @@ jobs:
               REDIS_HOST=redis
               REDIS_PORT=6379
               REDIS_DB=0
-              EOF
+              ENVEOF
             fi
 
             # Build & run
@@ -67,3 +67,4 @@ jobs:
 
             # (Optionnel) Healthcheck applicatif
             # sleep 5 && curl -sf http://localhost:5000/health-check || (echo "Healthcheck failed" && exit 1)
+          EOF
