@@ -103,6 +103,8 @@ UNIVERSITÉ DU QUÉBEC
 # Mise en place
 Le projet a été fork, puis ensuite clôné. Au niveau de Docker, dans le terminal, j'ai effectué la commande pour créer un réseau Docker et pour préparer l'environnement de développement. Par la suite, j'ai importé la collection disponible dans `/docs/collections`. 
 
+Au niveau du déploiement, les fichiers `.yml` pour le CI/CD ont été créés. Ainsi, lorsque les tests 
+
 # Question 1
 > Quel nombre d'unités de stock pour votre article avez-vous obtenu à la fin du test ? Et pour l'article avec id=2 ? Veuillez inclure la sortie de votre Postman pour illustrer votre réponse.
 
