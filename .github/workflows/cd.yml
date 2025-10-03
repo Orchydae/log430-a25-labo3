@@ -31,26 +31,32 @@ jobs:
           fi
 
       - name: Create external network (if needed)
+        shell: bash
         run: |
-          docker network create labo03-network || true
+          set -euo pipefail
+          if ! docker network inspect labo03-network >/dev/null 2>&1; then
+            docker network create labo03-network
+            echo "Created docker network: labo03-network"
+          else
+            echo "Docker network already exists: labo03-network"
+          fi
 
-          - name: Create .env if missing (printf)
-          shell: bash
-          run: |
-            set -euo pipefail
-            if [[ ! -f .env ]]; then
-              printf "%s\n" \
-                "DB_HOST=mysql" \
-                "DB_PORT=3306" \
-                "DB_NAME=labo03_db" \
-                "DB_USER=labo03" \
-                "DB_PASS=labo03" \
-                "REDIS_HOST=redis" \
-                "REDIS_PORT=6379" \
-                "REDIS_DB=0" \
-                > .env
-            fi
-        
+      - name: Create .env if missing (printf)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f .env ]]; then
+            printf "%s\n" \
+            "DB_HOST=mysql" \
+            "DB_PORT=3306" \
+            "DB_NAME=labo03_db" \
+            "DB_USER=labo03" \
+            "DB_PASS=labo03" \
+            "REDIS_HOST=redis" \
+            "REDIS_PORT=6379" \
+            "REDIS_DB=0" \
+            > .env
+          fi
 
       - name: Build & up
         run: |
